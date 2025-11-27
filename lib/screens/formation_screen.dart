@@ -4,6 +4,7 @@ import '../models/player.dart';
 import '../models/formation.dart';
 import '../services/database_service.dart';
 import '../widgets/player_icon.dart';
+import '../theme/theme.dart';
 
 class FormationScreen extends StatefulWidget {
   const FormationScreen({super.key});
@@ -16,6 +17,7 @@ class _FormationScreenState extends State<FormationScreen> {
   Formation? _currentFormation;
   List<Player> _availablePlayers = [];
   final Map<String, Offset> _playerPositions = {};
+  final Map<String, Offset> _formationSlots = {};
   final GlobalKey _pitchKey = GlobalKey();
 
   @override
@@ -36,6 +38,7 @@ class _FormationScreenState extends State<FormationScreen> {
     setState(() {
       _currentFormation = formation;
       _playerPositions.clear();
+      _formationSlots.clear();
       final pitchSize = _pitchKey.currentContext?.size ?? const Size(400, 600);
       final rows = formation.layout.length;
       for (int i = 0; i < rows; i++) {
@@ -46,7 +49,7 @@ class _FormationScreenState extends State<FormationScreen> {
           if (playerSpot.isNotEmpty) {
             final x = (pitchSize.width / (rowCount + 1)) * (j + 1);
             final y = (pitchSize.height / (rows + 1)) * (i + 1);
-            _playerPositions[playerSpot] = Offset(x, y);
+            _formationSlots[playerSpot] = Offset(x, y);
           }
         }
       }
@@ -56,19 +59,40 @@ class _FormationScreenState extends State<FormationScreen> {
   void _saveFormation() async {
     if (_currentFormation == null) return;
 
+    // 1. Get provider BEFORE async gaps
+    final dbService = context.read<DatabaseService>();
+
+    // 2. Ask the dialog (async)
     final newName = await _showSaveDialog();
-    if (newName != null && newName.isNotEmpty) {
-      final dbService = Provider.of<DatabaseService>(context, listen: false);
-      final formationToSave = Formation(
-        id: _currentFormation!.id, // Preserve ID for updates
-        name: newName,
-        layout: _currentFormation!.layout, // Or update the layout based on _playerPositions
-      );
-      await dbService.saveFormation(formationToSave);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Formation saved!')),
-      );
-    }
+    if (newName == null || newName.isEmpty) return;
+
+    // 3. If widget unmounted after dialog → stop safely
+    if (!mounted) return;
+
+    // 4. Prepare players
+    final Map<String, Player?> playersOnPitch = {};
+    _playerPositions.forEach((playerId, offset) {
+      playersOnPitch[playerId] =
+          _availablePlayers.firstWhere((p) => p.id == playerId);
+    });
+
+    final benchPlayers = _availablePlayers
+        .where((p) => !_playerPositions.containsKey(p.id))
+        .toList();
+
+    // 5. Save to database
+    await dbService.saveFormation(
+      formationName: newName,
+      pitchPlayers: playersOnPitch,
+      benchPlayers: benchPlayers,
+    );
+
+    // 6. Check mounted AGAIN before using context
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Formation saved!')),
+    );
   }
 
   Future<String?> _showSaveDialog() {
@@ -126,6 +150,7 @@ class _FormationScreenState extends State<FormationScreen> {
           if (!snapshot.hasData) return const SizedBox.shrink();
           final formations = snapshot.data!;
           return DropdownButtonFormField<Formation>(
+            // ignore: deprecated_member_use
             value: _currentFormation,
             hint: const Text('Select a Formation'),
             onChanged: (formation) {
@@ -158,34 +183,65 @@ class _FormationScreenState extends State<FormationScreen> {
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.green[800],
-            border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+            border: Border.all(color: accentTurquoise, width: 2),
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                // ignore: deprecated_member_use
+                color: accentTurquoise.withOpacity(0.5),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Stack(
-            children: _playerPositions.entries.map((entry) {
-              final player = _availablePlayers.firstWhere((p) => p.id == entry.key, orElse: () => Player(id: '', name: '', surname: '', skillLevel: SkillLevel.beginner, attributes: PlayerAttributes(attack: 0, defense: 0, speed: 0, goalkeeper: 0), preferredPositions: []));
-              if (player.id.isEmpty) return const SizedBox.shrink();
+            children: [
+              ..._formationSlots.entries.map((entry) {
+                return Positioned(
+                  left: entry.value.dx,
+                  top: entry.value.dy,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      // ignore: deprecated_member_use
+                      color: Colors.black.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        entry.key,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+              ..._playerPositions.entries.map((entry) {
+                final player = _availablePlayers.firstWhere((p) => p.id == entry.key, orElse: () => Player(id: '', name: '', surname: '', attributes: PlayerAttributes(speed: 0, defense: 0, attack: 0, goalkeeper: 0), preferredPositions: []));
+                if (player.id.isEmpty) return const SizedBox.shrink();
 
-              return AnimatedPositioned(
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.elasticOut,
-                left: entry.value.dx,
-                top: entry.value.dy,
-                child: Draggable<Player>(
-                  data: player,
-                  feedback: PlayerIcon(player: player, size: 55),
-                  childWhenDragging: Opacity(opacity: 0.5, child: PlayerIcon(player: player)),
-                  onDragEnd: (details) {
-                     final RenderBox pitchBox = _pitchKey.currentContext!.findRenderObject() as RenderBox;
-                     final localOffset = pitchBox.globalToLocal(details.offset);
-                     setState(() {
-                       _playerPositions[player.id] = localOffset;
-                     });
-                  },
-                  child: PlayerIcon(player: player),
-                ),
-              );
-            }).toList(),
+                return AnimatedPositioned(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.elasticOut,
+                  left: entry.value.dx,
+                  top: entry.value.dy,
+                  child: Draggable<Player>(
+                    data: player,
+                    feedback: PlayerIcon(player: player, size: 55),
+                    childWhenDragging: Opacity(opacity: 0.5, child: PlayerIcon(player: player)),
+                    onDragEnd: (details) {
+                      final RenderBox pitchBox = _pitchKey.currentContext!.findRenderObject() as RenderBox;
+                      final localOffset = pitchBox.globalToLocal(details.offset);
+                      setState(() {
+                        _playerPositions[player.id] = localOffset;
+                      });
+                    },
+                    child: PlayerIcon(player: player),
+                  ),
+                );
+              }),
+            ],
           ),
         );
       },

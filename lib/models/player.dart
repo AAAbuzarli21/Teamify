@@ -42,11 +42,14 @@ class Player {
     this.hasBeard = false,
   });
 
+  double get overallSkill {
+    return (attributes.speed + attributes.defense + attributes.attack + attributes.goalkeeper) / 4.0;
+  }
+
   SkillLevel get skillLevel {
-    final average = (attributes.speed + attributes.defense + attributes.attack + attributes.goalkeeper) / 4;
-    if (average >= 80) {
+    if (overallSkill >= 80) {
       return SkillLevel.pro;
-    } else if (average >= 50) {
+    } else if (overallSkill >= 50) {
       return SkillLevel.intermediate;
     } else {
       return SkillLevel.beginner;
@@ -63,8 +66,8 @@ class Player {
       jerseyNumber: json['jerseyNumber'],
       jerseyName: json['jerseyName'],
       favouriteTeam: json['favouriteTeam'],
-      attributes: PlayerAttributes.fromJson(json['attributes']),
-      preferredPositions: List<String>.from(json['preferredPositions']),
+      attributes: PlayerAttributes.fromJson(json['attributes'] ?? {}),
+      preferredPositions: List<String>.from(json['preferredPositions'] ?? []),
       hairStyle: json['hairStyle'] ?? 'hair_1',
       hairColor: json['hairColor'] != null ? Color(json['hairColor']) : const Color(0xFF000000),
       hasBeard: json['hasBeard'] ?? false,
@@ -106,10 +109,10 @@ class PlayerAttributes {
 
   factory PlayerAttributes.fromJson(Map<String, dynamic> json) {
     return PlayerAttributes(
-      speed: json['speed'],
-      defense: json['defense'],
-      attack: json['attack'],
-      goalkeeper: json['goalkeeper'],
+      speed: json['speed'] ?? 0,
+      defense: json['defense'] ?? 0,
+      attack: json['attack'] ?? 0,
+      goalkeeper: json['goalkeeper'] ?? 0,
     );
   }
 

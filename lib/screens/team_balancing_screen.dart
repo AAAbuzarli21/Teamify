@@ -41,9 +41,9 @@ class _TeamBalancingScreenState extends State<TeamBalancingScreen> with TickerPr
     final allPlayers = [..._currentMatch.teamA.players, ..._currentMatch.teamB.players];
     setState(() {
       _currentMatch = balancingService.createMatch(
-        allPlayers,
-        _currentMatch.balancingMode,
-        _currentMatch.teamA.players.length, // or teamB, they are the same size
+        allPlayers: allPlayers,
+        mode: _currentMatch.balancingMode,
+        teamSize: _currentMatch.teamA.players.length, // or teamB, they are the same size
       );
     });
     _shuffleController.forward(from: 0.0);

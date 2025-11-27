@@ -11,6 +11,16 @@ class Formation {
     required this.layout,
   });
 
+  factory Formation.fromFirestore(Map<String, dynamic> data, String documentId) {
+    return Formation(
+      id: documentId,
+      name: data['name'] as String,
+      layout: (data['layout'] as List<dynamic>)
+          .map((row) => (row as List<dynamic>).cast<String>())
+          .toList(),
+    );
+  }
+
   factory Formation.fromJson(Map<String, dynamic> json) {
     return Formation(
       id: json['id'] as String? ?? '',

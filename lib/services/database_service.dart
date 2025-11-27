@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/player.dart';
 import '../models/match.dart';
+import '../models/formation.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -10,6 +11,16 @@ class DatabaseService {
   User? get currentUser => _auth.currentUser;
 
   // Formations
+  Stream<List<Formation>> getFormations() {
+    if (currentUser == null) return Stream.value([]);
+    return _db
+        .collection('users')
+        .doc(currentUser!.uid)
+        .collection('formations')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => Formation.fromFirestore(doc.data(), doc.id)).toList());
+  }
   Future<void> saveFormation({
     required String formationName,
     required Map<String, Player?> pitchPlayers,

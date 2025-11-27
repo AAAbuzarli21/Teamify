@@ -7,13 +7,18 @@ class PlayerCard extends StatefulWidget {
   final Player player;
   final bool isSelected;
 
-  const PlayerCard({super.key, required this.player, this.isSelected = false});
+  const PlayerCard(
+      {super.key,
+      required this.player,
+      this.isSelected = false,
+      void Function()? onTap});
 
   @override
   State<PlayerCard> createState() => _PlayerCardState();
 }
 
-class _PlayerCardState extends State<PlayerCard> with SingleTickerProviderStateMixin {
+class _PlayerCardState extends State<PlayerCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -28,7 +33,8 @@ class _PlayerCardState extends State<PlayerCard> with SingleTickerProviderStateM
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );
-    _slideAnimation = Tween<Offset>(begin: const Offset(0.0, 0.5), end: Offset.zero).animate(
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0.0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
     _controller.forward();
@@ -92,7 +98,9 @@ class _PlayerCardState extends State<PlayerCard> with SingleTickerProviderStateM
         border: Border.all(color: accentNeonGreen, width: 1),
       ),
       child: Text(
-        widget.player.preferredPositions.isNotEmpty ? widget.player.preferredPositions.first.toUpperCase() : 'N/A',
+        widget.player.preferredPositions.isNotEmpty
+            ? widget.player.preferredPositions.first.toUpperCase()
+            : 'N/A',
         style: theme.textTheme.bodyMedium?.copyWith(
           color: accentNeonGreen,
           fontWeight: FontWeight.bold,
@@ -112,7 +120,7 @@ class _PlayerCardState extends State<PlayerCard> with SingleTickerProviderStateM
         starCount = 3;
         break;
       case SkillLevel.beginner:
-      starCount = 1;
+        starCount = 1;
         break;
     }
 
@@ -122,7 +130,9 @@ class _PlayerCardState extends State<PlayerCard> with SingleTickerProviderStateM
         3,
         (index) => Icon(
           index < starCount ? Icons.star_rounded : Icons.star_border_rounded,
-          color: index < starCount ? accentOrange : Colors.grey.withAlpha(128), // 50% opacity
+          color: index < starCount
+              ? accentOrange
+              : Colors.grey.withAlpha(128), // 50% opacity
           size: 18,
         ),
       ),

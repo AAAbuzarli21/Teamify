@@ -5,7 +5,10 @@ import '../models/match.dart';
 import '../models/balancing_mode.dart';
 
 class TeamBalancingService {
-  Match createMatch(List<Player> allPlayers, BalancingMode mode, int teamSize) {
+  Match createMatch(
+      {required List<Player> allPlayers,
+      required BalancingMode mode,
+      required int teamSize}) {
     final players = List<Player>.from(allPlayers)..shuffle();
     List<Player> teamAPlayers = [];
     List<Player> teamBPlayers = [];
@@ -22,8 +25,10 @@ class TeamBalancingService {
         break;
     }
 
-    final teamA = Team(name: 'Team A', color: Colors.blue, players: teamAPlayers);
-    final teamB = Team(name: 'Team B', color: Colors.red, players: teamBPlayers);
+    final teamA =
+        Team(name: 'Team A', color: Colors.blue, players: teamAPlayers);
+    final teamB =
+        Team(name: 'Team B', color: Colors.red, players: teamBPlayers);
 
     return Match(
       teamA: teamA,
@@ -34,7 +39,8 @@ class TeamBalancingService {
     );
   }
 
-  void _randomBalancing(List<Player> players, List<Player> teamA, List<Player> teamB, int teamSize) {
+  void _randomBalancing(List<Player> players, List<Player> teamA,
+      List<Player> teamB, int teamSize) {
     final maxPlayers = teamSize * 2;
     final selectedPlayers = players.take(maxPlayers).toList();
 
@@ -47,12 +53,14 @@ class TeamBalancingService {
     }
   }
 
-  void _skillBasedBalancing(List<Player> players, List<Player> teamA, List<Player> teamB, int teamSize) {
+  void _skillBasedBalancing(List<Player> players, List<Player> teamA,
+      List<Player> teamB, int teamSize) {
     final maxPlayers = teamSize * 2;
     final selectedPlayers = players.take(maxPlayers).toList();
 
     // Sort players by skill level
-    selectedPlayers.sort((a, b) => _calculateSkillScore(b).compareTo(_calculateSkillScore(a)));
+    selectedPlayers.sort(
+        (a, b) => _calculateSkillScore(b).compareTo(_calculateSkillScore(a)));
 
     int teamASkill = 0;
     int teamBSkill = 0;
@@ -68,14 +76,23 @@ class TeamBalancingService {
     }
   }
 
-  void _positionalBalancing(List<Player> players, List<Player> teamA, List<Player> teamB, int teamSize) {
+  void _positionalBalancing(List<Player> players, List<Player> teamA,
+      List<Player> teamB, int teamSize) {
     final maxPlayers = teamSize * 2;
     final selectedPlayers = players.take(maxPlayers).toList();
 
-    final goalkeepers = selectedPlayers.where((p) => p.preferredPositions.contains('GK')).toList();
-    final defenders = selectedPlayers.where((p) => p.preferredPositions.contains('DEF')).toList();
-    final midfielders = selectedPlayers.where((p) => p.preferredPositions.contains('MID')).toList();
-    final forwards = selectedPlayers.where((p) => p.preferredPositions.contains('FOR')).toList();
+    final goalkeepers = selectedPlayers
+        .where((p) => p.preferredPositions.contains('GK'))
+        .toList();
+    final defenders = selectedPlayers
+        .where((p) => p.preferredPositions.contains('DEF'))
+        .toList();
+    final midfielders = selectedPlayers
+        .where((p) => p.preferredPositions.contains('MID'))
+        .toList();
+    final forwards = selectedPlayers
+        .where((p) => p.preferredPositions.contains('FOR'))
+        .toList();
 
     _distributePlayers(goalkeepers, teamA, teamB);
     _distributePlayers(defenders, teamA, teamB);
@@ -89,7 +106,8 @@ class TeamBalancingService {
     _distributePlayers(remainingPlayers, teamA, teamB);
   }
 
-  void _distributePlayers(List<Player> players, List<Player> teamA, List<Player> teamB) {
+  void _distributePlayers(
+      List<Player> players, List<Player> teamA, List<Player> teamB) {
     for (final player in players) {
       if (teamA.length <= teamB.length) {
         teamA.add(player);
@@ -106,7 +124,7 @@ class TeamBalancingService {
       case SkillLevel.intermediate:
         return 2;
       case SkillLevel.beginner:
-      return 1;
+        return 1;
     }
   }
 }
